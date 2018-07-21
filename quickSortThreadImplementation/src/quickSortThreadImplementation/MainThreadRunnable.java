@@ -12,15 +12,16 @@ public class MainThreadRunnable implements Callable<Integer[]> {
 
 	
 	static ExecutorService pool = Executors.newCachedThreadPool();
+	//static ExecutorService pool = Executors.newFixedThreadPool(50);
 	
 	Integer arr[];
 	int low;
 	int high;
 	
-	public MainThreadRunnable(Integer a[]){
-		arr=a.clone();
-		low=0;
-		high=arr.length-1;
+	public MainThreadRunnable(Integer a[], int l, int h){
+		arr=a;
+		low=l;
+		high=h;
 	}
 	
 	public Integer[] call(){
@@ -32,12 +33,12 @@ public class MainThreadRunnable implements Callable<Integer[]> {
    high  --> Ending index */
 	public Integer[] sort()
 	{	//System.out.println("sort() entered with arr: " + Arrays.toString(arr));
-		Integer result[] = new Integer[arr.length];
+		//Integer result[] = new Integer[arr.length];
 		
-		if(high-low <1000){
+		/*if(high-low <100000){
 			Arrays.sort(arr);
 			return arr;
-		}
+		}*/
 		
 		if (low <= high)
 		{
@@ -51,21 +52,21 @@ public class MainThreadRunnable implements Callable<Integer[]> {
 			
 			/* pi is partitioning index, arr[pi] is 
 	           now at right place */
-			int pi = partition(arr, low, high);
+			int pi = partition();
 			
 			
-			Integer[] a = new Integer[pi];
+			/*Integer[] a = new Integer[pi];
 			Integer[] b = new Integer[high-pi];
 			System.arraycopy(arr, 0, a, 0, pi);
-			System.arraycopy(arr, pi+1, b, 0, high-pi);
+			System.arraycopy(arr, pi+1, b, 0, high-pi);*/
 			
-			FutureTask sortThread1 = new FutureTask(new MainThreadRunnable(a));
-			FutureTask sortThread2 = new FutureTask(new MainThreadRunnable(b));
+			FutureTask sortThread1 = new FutureTask(new MainThreadRunnable(arr,low,pi-1));
+			FutureTask sortThread2 = new FutureTask(new MainThreadRunnable(arr,pi+1,high));
 	
 			pool.execute(sortThread1);
 			pool.execute(sortThread2);
 			
-			while (true) {
+			/*while (true) {
 				if (sortThread1.isDone() && sortThread2.isDone()) {
 					//System.out.println("Sorting threads for " + Arrays.toString(arr) + " done");
 					try {
@@ -85,12 +86,12 @@ public class MainThreadRunnable implements Callable<Integer[]> {
 					}
 					break;
 				}
-			}
+			}*/
 		}
-		return result;
+		return arr;
 	}
 	
-	public Integer partition(Integer arr[], int low, int high)
+	public Integer partition()
 	{	
 		 /* This function takes last element as pivot,
 	    places the pivot element at its correct
@@ -99,29 +100,27 @@ public class MainThreadRunnable implements Callable<Integer[]> {
 	    pivot and all greater elements to right
 	    of pivot */
 		
-		int pivot = arr[high]; 
-		int i = (low-1); // index of smaller element
-		for (int j=low; j<high; j++)
-		{
-			// If current element is smaller than or
-			// equal to pivot
-			if (arr[j] <= pivot)
-			{
-				i++;
+		synchronized (arr) {
+			int pivot = arr[high];
+			int i = (low - 1); // index of smaller element
+			for (int j = low; j < high; j++) {
+				// If current element is smaller than or
+				// equal to pivot
+				if (arr[j] <= pivot) {
+					i++;
 
-				// swap arr[i] and arr[j]
-				int temp = arr[i];
-				arr[i] = arr[j];
-				arr[j] = temp;
+					// swap arr[i] and arr[j]
+					int temp = arr[i];
+					arr[i] = arr[j];
+					arr[j] = temp;
+				}
 			}
+			// swap arr[i+1] and arr[high] (or pivot)
+			int temp = arr[i + 1];
+			arr[i + 1] = arr[high];
+			arr[high] = temp;
+			return i + 1;
 		}
-
-		// swap arr[i+1] and arr[high] (or pivot)
-		int temp = arr[i+1];
-		arr[i+1] = arr[high];
-		arr[high] = temp;
-		
-		return i+1;
 	}
 
 	/* A utility function to print array of size n */
@@ -130,21 +129,25 @@ public class MainThreadRunnable implements Callable<Integer[]> {
 	public static void main(String args[])
 	{	
 		//Integer arr[] = {10, 7, 8, 9, 1, 5,15,3,6,9,4651,6484,64,64,84,684,654,684,684,684,684,84,654,684,84,86974,974,6879,7,984,984,6849,46,84};
-		Integer[] arr = generateRandomList(500000);
+		Integer[] arr = generateRandomList(15);
 		int n = arr.length;
+		/*Integer[] arr2 = new Integer[n];
+		System.arraycopy(arr, 0, arr2, 0, n);*/
 		
-		FutureTask sortThread = new FutureTask(new MainThreadRunnable(arr));
-		long threadSortStartTime = System.nanoTime();
+		System.out.println(Arrays.toString(arr));
+		
+		FutureTask sortThread = new FutureTask(new MainThreadRunnable(arr,0,n-1));
+		long threadSortStartTime = System.currentTimeMillis();
 		pool.execute(sortThread);
 		long threadSortEndTime;
 		while (true) {
 			if (sortThread.isDone()) {
-				threadSortEndTime = System.nanoTime();
+				threadSortEndTime = System.currentTimeMillis();
 				System.out.println("time by thread:\t" + (threadSortEndTime- threadSortStartTime));
 				try {
 					//System.out.println("sorted array");
-					Integer[] result = (Integer[]) sortThread.get();
-					//System.out.println(Arrays.toString(result));
+					//Integer[] result = (Integer[]) sortThread.get();
+					System.out.println(Arrays.toString(arr));
 					//System.out.println("length: " + result.length);
 				} catch (Exception e) {
 					// TODO: handle exception
@@ -156,18 +159,18 @@ public class MainThreadRunnable implements Callable<Integer[]> {
 		}
 		pool.shutdown();
 		
-		long normalQuickSortStartTime = System.nanoTime();
+		/*long normalQuickSortStartTime = System.currentTimeMillis();
 		//System.out.println("array enterd\n" + Arrays.toString(arr));
-		Arrays.sort(arr);
-		long normalQuickSortEndTime = System.nanoTime();
-		System.out.println("Time by normal:\t" + (normalQuickSortEndTime- normalQuickSortStartTime));
+		Arrays.sort(arr2);
+		long normalQuickSortEndTime = System.currentTimeMillis();
+		System.out.println("Time by normal:\t" + (normalQuickSortEndTime- normalQuickSortStartTime));*/
 	}
 	
 	
 	public static Integer[] generateRandomList(int N){
 		ArrayList<Integer> list = new ArrayList<Integer>();
 		for(int i=0;i<N;i++){
-			list.add((int)(100 + Math.random()*1000));
+			list.add((int)(Math.random()*N));
 		}
 		return list.toArray(new Integer[N]);
 	}
