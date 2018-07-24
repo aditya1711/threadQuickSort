@@ -50,6 +50,10 @@ public class MainThreadRunnable implements Callable<Integer[]>, Runnable {
 			Arrays.sort(arr);
 			return arr;
 		}*/
+		if(high-low < 10000) {
+			sortDirectly();
+			return arr;
+		}
 		
 		if (low < high)
 		{
@@ -159,7 +163,7 @@ public class MainThreadRunnable implements Callable<Integer[]>, Runnable {
 	public static void main(String args[])
 	{	
 		//Integer arr[] = {10, 7, 8, 9, 1, 5,15,3,6,9,4651,6484,64,64,84,684,654,684,684,684,684,84,654,684,84,86974,974,6879,7,984,984,6849,46,84};
-		Integer[] arr = generateRandomList(5000);
+		Integer[] arr = generateRandomList(5000000);
 		int n = arr.length;
 		Integer[] arr2 = new Integer[n];
 		System.arraycopy(arr, 0, arr2, 0, n);
@@ -188,6 +192,7 @@ public class MainThreadRunnable implements Callable<Integer[]>, Runnable {
 				break;
 			} 
 		}*/
+		
 		try {
 			long threadSortStartTime = System.currentTimeMillis();
 			Thread t = new Thread(new MainThreadRunnable(arr,0,n-1));
@@ -201,10 +206,10 @@ public class MainThreadRunnable implements Callable<Integer[]>, Runnable {
 			e.printStackTrace();
 		}
 		
-		long threadSortStartTime = System.currentTimeMillis();
+		/*long threadSortStartTime = System.currentTimeMillis();
 		new MainThreadRunnable(arr2, 0, n-1).sortDirectly();
 		long threadSortEndTime = System.currentTimeMillis();
-		System.out.println("time by Normal:\t" + (threadSortEndTime- threadSortStartTime));
+		System.out.println("time by Normal:\t" + (threadSortEndTime- threadSortStartTime));*/
 		
 		
 		/*long normalQuickSortStartTime = System.currentTimeMillis();
